@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Sankey plots with R - UK general elections 2017-19</title>
+
+<script src="sankeyplot_comparison_files/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="sankeyplot_comparison_files/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="sankeyplot_comparison_files/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="sankeyplot_comparison_files/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="sankeyplot_comparison_files/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="sankeyplot_comparison_files/navigation-1.1/tabsets.js"></script>
+<link href="sankeyplot_comparison_files/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="sankeyplot_comparison_files/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Sankey plots with R - UK general elections 2017-19</h1>
+
+</div>
+
+
+<div id="ggalluvial" class="section level2">
+<h2>ggalluvial</h2>
+<p>Using the ggalluvial package:</p>
+<p><img src="sankeyplot_comparison_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+</div>
+<div id="ggforce" class="section level2">
+<h2>ggforce</h2>
+<p>Using the ggforce package:</p>
+<p><img src="sankeyplot_comparison_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+</div>
+<div id="googlevis" class="section level2">
+<h2>googleVis</h2>
+<p>Using the googleVis package:</p>
+<!-- Sankey generated in R 4.0.0 by googleVis 0.6.4 package -->
+<!-- Tue Apr 28 18:51:21 2020 -->
+<!-- jsHeader -->
+<script type="text/javascript">
+ 
+// jsData 
+function gvisDataSankeyID1ddc341a7f00 () {
+var data = new google.visualization.DataTable();
+var datajson =
+[
+ [
+"Labour 17",
+"Labour 19",
+1715
+],
+[
+"Labour 17",
+"Conservative 19",
+256
+],
+[
+"Labour 17",
+"Liberal Democrat 19",
+187
+],
+[
+"Labour 17",
+"Brexit Party 19",
+37
+],
+[
+"Labour 17",
+"Green Party 19",
+62
+],
+[
+"Conservative 17",
+"Labour 19",
+70
+],
+[
+"Conservative 17",
+"Conservative 19",
+2083
+],
+[
+"Conservative 17",
+"Liberal Democrat 19",
+123
+],
+[
+"Conservative 17",
+"Brexit Party 19",
+57
+],
+[
+"Conservative 17",
+"Green Party 19",
+19
+],
+[
+"Liberal Democrat 17",
+"Labour 19",
+101
+],
+[
+"Liberal Democrat 17",
+"Conservative 19",
+78
+],
+[
+"Liberal Democrat 17",
+"Liberal Democrat 19",
+325
+],
+[
+"Liberal Democrat 17",
+"Brexit Party 19",
+2
+],
+[
+"Liberal Democrat 17",
+"Green Party 19",
+23
+],
+[
+"UKIP 17",
+"Labour 19",
+4
+],
+[
+"UKIP 17",
+"Conservative 19",
+97
+],
+[
+"UKIP 17",
+"Brexit Party 19",
+34
+],
+[
+"UKIP 17",
+"Green Party 19",
+5
+],
+[
+"Green Party 17",
+"Labour 19",
+37
+],
+[
+"Green Party 17",
+"Conservative 19",
+16
+],
+[
+"Green Party 17",
+"Liberal Democrat 19",
+16
+],
+[
+"Green Party 17",
+"Brexit Party 19",
+1
+],
+[
+"Green Party 17",
+"Green Party 19",
+46
+] 
+];
+data.addColumn('string','vote17');
+data.addColumn('string','vote19');
+data.addColumn('number','freq');
+data.addRows(datajson);
+return(data);
+}
+ 
+// jsDrawChart
+function drawChartSankeyID1ddc341a7f00() {
+var data = gvisDataSankeyID1ddc341a7f00();
+var options = {};
+options["width"] = 705;
+options["height"] = 400;
+options["tooltip"] = {isHtml:'True'};
+options["sankey"] = {link: { colorMode: 'gradient' },
+                              node: { colors: ['#DC241f',
+                                               '#DC241f',
+                                               '#0087DC',
+                                               '#FAA61A',
+                                               '#12B6CF',
+                                               '#528D6B',
+                                               '#0087DC',
+                                               '#FAA61A',
+                                               '#70147A',
+                                               '#528D6B'],
+                                      label: { fontSize: 14, bold: true }
+                                    },
+                              iterations: 0
+                              };
+
+    var chart = new google.visualization.Sankey(
+    document.getElementById('SankeyID1ddc341a7f00')
+    );
+    chart.draw(data,options);
+    
+
+}
+  
+ 
+// jsDisplayChart
+(function() {
+var pkgs = window.__gvisPackages = window.__gvisPackages || [];
+var callbacks = window.__gvisCallbacks = window.__gvisCallbacks || [];
+var chartid = "sankey";
+  
+// Manually see if chartid is in pkgs (not all browsers support Array.indexOf)
+var i, newPackage = true;
+for (i = 0; newPackage && i < pkgs.length; i++) {
+if (pkgs[i] === chartid)
+newPackage = false;
+}
+if (newPackage)
+  pkgs.push(chartid);
+  
+// Add the drawChart function to the global list of callbacks
+callbacks.push(drawChartSankeyID1ddc341a7f00);
+})();
+function displayChartSankeyID1ddc341a7f00() {
+  var pkgs = window.__gvisPackages = window.__gvisPackages || [];
+  var callbacks = window.__gvisCallbacks = window.__gvisCallbacks || [];
+  window.clearTimeout(window.__gvisLoad);
+  // The timeout is set to 100 because otherwise the container div we are
+  // targeting might not be part of the document yet
+  window.__gvisLoad = setTimeout(function() {
+  var pkgCount = pkgs.length;
+  google.load("visualization", "1", { packages:pkgs, callback: function() {
+  if (pkgCount != pkgs.length) {
+  // Race condition where another setTimeout call snuck in after us; if
+  // that call added a package, we must not shift its callback
+  return;
+}
+while (callbacks.length > 0)
+callbacks.shift()();
+} });
+}, 100);
+}
+ 
+// jsFooter
+</script>
+<!-- jsChart -->
+<script type="text/javascript" src="https://www.google.com/jsapi?callback=displayChartSankeyID1ddc341a7f00"></script>
+<!-- divChart -->
+<div id="SankeyID1ddc341a7f00" style="width: 705; height: 400;">
+
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

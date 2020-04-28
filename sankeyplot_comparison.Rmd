@@ -1,0 +1,132 @@
+---
+title: "Sankey plots with R - UK general elections 2017-19"
+output:
+  html_document:
+    self_contained: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+
+### load in packages
+library("dplyr")
+library("ggplot2")
+library("ggforce")
+library("ggalluvial")
+library("ggparallel")
+library("googleVis")
+
+### define plot colours
+colours = c("#DC241f", "#0087DC", "#FAA61A", "#70147A", "#12B6CF", 
+            "#528D6B", "#FDF38E", "#008142")
+names(colours) = c("Labour", "Conservative", "Liberal Democrat", "UKIP", "Brexit Party", 
+                   "Green Party", "SNP", "Plaid Cymru")
+alpha <- 0.7 # transparency value
+
+# define factor levels
+fct_levels <- c("Labour", "Conservative", "Liberal Democrat", "UKIP", "Brexit Party", "Green Party", "SNP", "Plaid Cymru")
+fct_levels_17 <- paste0(fct_levels, " 17")
+fct_levels_19 <- paste0(fct_levels, " 19")
+
+### create data for sankey plots
+dat_17_19 = read.csv("sankey_data.csv")
+
+dat_17_19_ggalluvial = dat_17_19 %>% 
+  mutate_at(vars(vote17, vote19),
+            funs(factor(., levels = fct_levels)))
+
+dat_ggforce_17_19 <- dat_17_19  %>%
+  gather_set_data(1:2) %>%
+  arrange(x,vote19,desc(vote17)) %>% 
+  mutate_at(vars(vote17, vote19),
+            funs(factor(., levels = fct_levels)))
+
+dat_17_19_googleVis = dat_17_19 %>% 
+  mutate_at(vars(vote17, vote19),
+            funs(factor(., levels = fct_levels))) %>%
+  mutate(vote17 = paste0(vote17, " 17"), 
+         vote19 = paste0(vote19, " 19")) %>% 
+  arrange(factor(vote17, levels = fct_levels_17), 
+          factor(vote19, levels = fct_levels_19)) %>% 
+  as.data.frame()
+```
+
+## ggalluvial
+
+Using the ggalluvial package:
+
+```{r, results='asis', echo=FALSE, warning=FALSE}
+ggplot(dat_17_19_ggalluvial,
+       aes(y = freq, axis1 = vote17, axis2 = vote19)) +
+  geom_alluvium(aes(fill = vote17, color = vote17),
+                width = 1/12, alpha = alpha, knot.pos = 0.4) +
+  geom_stratum(width = 1/6) +
+  ggfittext::geom_fit_text(infer.label = TRUE, stat = "stratum", width = 1/6, min.size = 3) +
+  scale_fill_manual(values  = colours) +
+  scale_color_manual(values = colours) +
+  scale_x_continuous(breaks = 1:2, labels = c("GE vote 2017", "GE vote 2019")) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(size = 14, face = "bold")
+  )
+```
+
+## ggforce
+
+Using the ggforce package:
+
+```{r, results='asis', echo=FALSE, warning=FALSE}
+ggplot(dat_ggforce_17_19, aes(x = x, id = id, split = y, value = freq)) +
+  geom_parallel_sets(aes(fill = vote19), alpha = alpha, axis.width = 0.2,
+                     n=100, strength = 0.5) +
+  geom_parallel_sets_axes(axis.width = 0.25, fill = "gray95",
+                          color = "gray80", size = 0.15) +
+  geom_parallel_sets_labels(colour = 'gray35', size = 4.5, angle = 0, fontface="bold") +
+  scale_fill_manual(values  = colours) +
+  scale_color_manual(values = colours) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(size = 20, face = "bold"),
+    axis.title.x  = element_blank()
+  )
+```
+
+## googleVis
+
+Using the googleVis package:
+
+```{r, results='asis', tidy=FALSE, warning=FALSE}
+gvis_reordered <- gvisSankey(dat_17_19_googleVis,
+                         from = 'vote17',
+                         to = 'vote19',
+                         weight = 'freq',
+    options = list(height = 400, width = 705,
+                   tooltip = "{isHtml:'True'}",
+                   sankey = "{link: { colorMode: 'gradient' },
+                              node: { colors: ['#DC241f',
+                                               '#DC241f',
+                                               '#0087DC',
+                                               '#FAA61A',
+                                               '#12B6CF',
+                                               '#528D6B',
+                                               '#0087DC',
+                                               '#FAA61A',
+                                               '#70147A',
+                                               '#528D6B'],
+                                      label: { fontSize: 14, bold: true }
+                                    },
+                              iterations: 0
+                              }")
+  )
+
+## Print gvis object - chart only, not full HTML
+print(gvis_reordered, tag = "chart")
+```
