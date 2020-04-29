@@ -40,7 +40,7 @@ dat_17_19_ggalluvial = dat_17_19 %>%
   mutate_at(vars(vote17, vote19),
             funs(factor(., levels = fct_levels)))
 
-dat_ggforce_17_19 <- dat_17_19  %>%
+dat_17_19_ggforce <- dat_17_19  %>%
   gather_set_data(1:2) %>%
   arrange(x,vote19,desc(vote17)) %>% 
   mutate_at(vars(vote17, vote19),
@@ -85,7 +85,7 @@ ggplot(dat_17_19_ggalluvial,
 Using the ggforce package:
 
 ```{r, results='asis', echo=FALSE, warning=FALSE}
-ggplot(dat_ggforce_17_19, aes(x = x, id = id, split = y, value = freq)) +
+ggplot(dat_17_19_ggforce, aes(x = x, id = id, split = y, value = freq)) +
   geom_parallel_sets(aes(fill = vote19), alpha = alpha, axis.width = 0.2,
                      n=100, strength = 0.5) +
   geom_parallel_sets_axes(axis.width = 0.25, fill = "gray95",
