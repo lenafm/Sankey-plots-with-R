@@ -12,6 +12,20 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
+On this page I explore different R packages for building sankey plots to be integrated in an interactive Shiny app. 
+
+The idea of this app is that the user will be able to upload their own dataset to the Shiny app, select the data columns that should be used for plotting, customise the plot as desired, and finally download a static image (png/jpg) of the plot. 
+
+After some research and playing around with different options I decided to narrow it down to the ggalluvial and ggforce packages. 
+
+The other packages in the running were alluvial, googleVis, riverplot, and networkD3. I disregarded each of these for one or multiple of the following reasons: 
+
+* the data structures needed didn't seem suitable for easy reformatting of different data types
+* I wasn't happy with the aesthetics of the plots
+* the plot couldn't be exported as a png/jpg with the shiny downloadHandler
+* the plotting functionality wasn't compatible with the ggplot2 package to extend on the styling.
+
+
 ```{r loadPackages}
 ###=================================================================================
 ### load in packages
@@ -23,7 +37,23 @@ library("ggparallel")
 
 ```
 
-## Two axes
+To identify which of ggalluvial and ggforce is better suited for the task I used two datasets to create plots that make use of the functionality and plotting features of the two packages in different ways. 
+
+This makes it easier to identify which package is preferable with respect to being able to deliver on various different desired outcomes the user might have based on the nature of the data. 
+
+## Vote choice in the 2017 and 2019 UK general elections
+
+For the traditional sankey plot between only two 'axes' I used polling data from the [British Election Study](https://www.britishelectionstudy.com/) about vote choice of electors in the 2017 and 2019 general elections in the UK. 
+
+The main issue here was readability; some of the flows between the smaller UK parties are pretty small and it's important that the graph can deal with this type of data and still convey the information. There are a few other pros and cons to either package that can be summarised as follows.
+
+**Pros and cons**
+
+I like about the ggalluvial that the data (at least for the case of only two axes) just needs to be in an easy frequency table format (i.e.vote choice in 2017 - vote choice in 2019 - frequency); this is easy to understand and easy to achieve with most loaded in dataformats. It's also nice that the plot recognises the ggfittext::geom_fit_text function to resize the font size of the labels and therefore automatically fit the labels onto the strata.
+
+However, from a readibility point of view the ggforce package wins. Because there are no gaps between the strata in the ggalluvial plot, it's considerably more difficult to distinguish the source and target categories (i.e. parties) of the flows, especially for the smaller categories.
+
+In both packages it's straightforward to assign the desired colouring options and to change the order of the strata depending on factor levels of the variables. 
 
 ### Prepare data and specify plot options
 
@@ -66,7 +96,7 @@ alpha <- 0.7
 
 ### ggalluvial
 
-```{r, results='asis',fig.width = 12, fig.height = 7}
+```{r, results='asis',fig.width = 10, fig.height = 7}
 ggplot(dat_17_19_ggalluvial,
        aes(y = freq, axis1 = vote17, axis2 = vote19)) +
   geom_alluvium(aes(fill = vote17, color = vote17),
@@ -128,7 +158,21 @@ ggplot(dat_17_19_ggforce, aes(x = x, id = id, split = y, value = freq)) +
   )
 ```
 
-## More than two axes
+## Titanic
+
+For the case of more than two axes I used the famous titanic dataset that is built into R. Obviously the data here doesn't represent change over time but tries to represent multiple (in this case demographical) dimensions on a 2D plot by plotting the frequencies as flows between them.
+
+Because the outcome variable in the titanic dataset is whether or not a person survived the crash, this variable is visualised as an 'extra' dimension additional to the axes in the sankey plot, namely a distinction by colour.
+
+The main challenge of creating these plots was to understand the dataformat in which the ggalluvial plot needs the data to be. As it turns out, the data format for ggforce and ggalluvial is nearly the same when we're using the packages to plot more than two axes. I could have used the same simple version as above for the ggalluvial plot; however, for that version one needs to specify each axis separately in the aes() part of the ggplot command (i.e. axis1 = 'Class, axis2 = 'Sex', axis3 = 'Age'). Because I want to automate the data formatting for these plots in the shiny app I have to use the option that uses the same data format as ggforce.
+
+Things I noticed as I was creating these sankey plots:
+
+**Pros and cons**
+
+With only two different colours the readability of the ggalluvial plot is considerably improved. The fact that there is no white space between the stratum actually has the advantage that it causes all three axes to be the same height; it would be nice if there was an option to equalise the height of the axes in ggforce (so far I haven't found a way to do so). 
+
+However, I still think overall that the separation of the strata in ggforce means the readability of ggforce is slightly ahead of that of ggalluvial.
 
 ### Prepare data and specify plot options
 
@@ -161,7 +205,7 @@ alpha <- 0.7
 
 ### ggalluvial
 
-```{r, results='asis',fig.width = 12, fig.height = 7}
+```{r, results='asis',fig.width = 10, fig.height = 7}
 ggplot(dat_plot,
        aes(x = x, stratum = stratum, alluvium = id,
            y = Freq, label = stratum, fill = Survived)) +
@@ -207,3 +251,17 @@ ggplot(dat_plot, aes(x = x, id = id, split = stratum, value = Freq)) +
 
 ```
 
+## Summary
+
+After playing around with the two packages for a while and having tried to get them to display very similar results for the different datasets my conclusion is that while they're both reasonable options for the desired outcome, I have a slight preference for the ggforce package. 
+
+This is partly because I find it more aesthetically pleasing but mainly because it has slightly superior readability than the plots from ggalluvial, both for a larger number of colours and for a larger number of overall categories.
+
+There are a few pros and cons that either packages have (axis labels, sizing, proportions) that might become more or less of a problem when I try to implement them in Shiny. For now, my plan is to start with the Shiny app using ggforce based on the preference I have from the work that went into the plots on this page, but keep ggalluvial as an option to fall back on. 
+
+In general, it's worth adding that there are few things that I'm missing in both packages:
+
+* For the two-axes example, it would be nice to be able to have the option to split the colour of the strata separately for each axis and then set a colour gradient between the strata for those flows that don't have the same source and target (for example a red-blue gradient for those voters that changed from Labour to Conservative).
+* In all cases, it would be nice to have more flexibility (and definitely easier handling) with respect to the length and width of the flows and the overall shape of the plots.
+
+It's possible that options exist to achieve these things - some more research is definitely required. Building my own extensions to achieve some of these additional features is also a potential at some point further down the line.
