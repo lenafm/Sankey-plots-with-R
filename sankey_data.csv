@@ -1,25 +1,25 @@
-"vote17","vote19","freq"
-"Conservative","Brexit Party",57
-"Conservative","Conservative",2083
-"Conservative","Green Party",19
-"Conservative","Labour",70
-"Conservative","Liberal Democrat",123
-"Green Party","Brexit Party",1
-"Green Party","Conservative",16
-"Green Party","Green Party",46
-"Green Party","Labour",37
-"Green Party","Liberal Democrat",16
-"Labour","Brexit Party",37
-"Labour","Conservative",256
-"Labour","Green Party",62
-"Labour","Labour",1715
-"Labour","Liberal Democrat",187
-"Liberal Democrat","Brexit Party",2
-"Liberal Democrat","Conservative",78
-"Liberal Democrat","Green Party",23
-"Liberal Democrat","Labour",101
-"Liberal Democrat","Liberal Democrat",325
-"UKIP","Brexit Party",34
-"UKIP","Conservative",97
-"UKIP","Green Party",5
-"UKIP","Labour",4
+vote17,vote19,freq
+Conservative17,Brexit Party19,57
+Conservative17,Conservative19,2083
+Conservative17,Green Party19,19
+Conservative17,Labour19,70
+Conservative17,Liberal Democrat19,123
+Green Party17,Brexit Party19,1
+Green Party17,Conservative19,16
+Green Party17,Green Party19,46
+Green Party17,Labour19,37
+Green Party17,Liberal Democrat19,16
+Labour17,Brexit Party19,37
+Labour17,Conservative19,256
+Labour17,Green Party19,62
+Labour17,Labour19,1715
+Labour17,Liberal Democrat19,187
+Liberal Democrat17,Brexit Party19,2
+Liberal Democrat17,Conservative19,78
+Liberal Democrat17,Green Party19,23
+Liberal Democrat17,Labour19,101
+Liberal Democrat17,Liberal Democrat19,325
+UKIP17,Brexit Party19,34
+UKIP17,Conservative19,97
+UKIP17,Green Party19,5
+UKIP17,Labour19,4
