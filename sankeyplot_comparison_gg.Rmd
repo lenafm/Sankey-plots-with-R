@@ -1,5 +1,5 @@
 ---
-title: "Sankey plots with R"
+title: "Sankey plots with R - without data specification"
 knit: (function(input_file, encoding) {
   out_dir <- 'docs';
   rmarkdown::render(input_file,
