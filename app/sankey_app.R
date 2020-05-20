@@ -17,7 +17,7 @@ library("ggforce")
 # labels <- c("change", "these", "labels")
 
 ### load data
-input_data <- read.csv("example_data.csv")
+input_data <- read.csv("./data/example_data.csv")
 
 # ### for local testing
 # df <- input_data
@@ -187,7 +187,7 @@ ui <- fluidPage(
     
     # Main panel for displaying outputs ----
     mainPanel(
-      tableOutput("table"),
+      # tableOutput("table"),
       plotOutput("sankeyChart")
       
     )
