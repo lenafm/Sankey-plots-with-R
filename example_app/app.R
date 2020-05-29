@@ -1,14 +1,15 @@
-
+# load in packages
 library(shiny)
-
-### load in packages
-library("dplyr")
-library("titanic")
-library("ggplot2")
-library("ggforce")
+library(shinyWidgets)
+library(dplyr)
+library(titanic)
+library(ggplot2)
+library(ggforce)
+library(RColorBrewer)
+library(scales)
 
 # ### set wd (remove later)
-# setwd("C:/Users/Lena/Documents/Datasketch/Sankey plots in R")
+# setwd("C:/Users/Lena/Documents/Projects/Datasketch/Sankey plots in R/example_app")
 # 
 #
 # ### specify plot settings
@@ -71,7 +72,7 @@ prepare_data <- function(df, col_vars, fill_var = ""){
   return(dat_plot)
 }
 
-create_sankey_plot <- function(df, fill_var = "", palette = NULL, labels = NULL, stratum_colour = "black"){
+create_sankey_plot <- function(df, fill_var = "", palette = NULL, manualcols = NULL, labels = NULL, stratum_colour = "black"){
   
   if(fill_var == ""){
     fill_var <- NULL
@@ -129,8 +130,14 @@ create_sankey_plot <- function(df, fill_var = "", palette = NULL, labels = NULL,
   
   if(!is.null(palette)){
     gg <- gg +
-      scale_fill_manual(name = fill_var, values = palette) +
-      scale_color_manual(values = palette)
+      scale_fill_brewer(name = fill_var, palette = palette) +
+      scale_color_brewer(palette = palette)
+  }
+  
+  if(!is.null(manualcols)){
+    gg <- gg +
+      scale_fill_manual(name = fill_var, values = manualcols) +
+      scale_color_manual(values = manualcols)
   }
   
   if(!is.null(labels)){
@@ -174,6 +181,39 @@ ui <- fluidPage(
           onInitialize = I('function() { this.setValue(""); }')
         )
       ),
+      conditionalPanel(
+        condition = "input.fillval != ''",
+        selectizeInput(
+          "fillcol",
+          "Choose method for colour selection:",
+          choices = list("Colour palette" = "colourpalette", "Custom" = "custom"),
+          options = list(
+            placeholder = 'Optionally select a colour method',
+            onInitialize = I('function() { this.setValue(""); }')
+            )
+          )
+        ),
+      conditionalPanel(
+        condition = "input.fillcol == 'colourpalette'",
+        selectInput(
+          "palettes", 
+          "Colour palettes",
+          choices = list(
+            "Categorical:" = list("Accent", "Dark2", "Paired", "Pastel1",
+                                  "Pastel2", "Set1", "Set2", "Set3"),
+            "Diverging" = list("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
+                               "RdYlBu", "RdYlGn", "Spectral"),
+            "Sequential:" = list("Blues", "BuGn", "BuPu", "GnBu", "Greens",
+                                 "Greys", "Oranges", "OrRd", "PuBu", "PuBuGn", "PuRd", "Purples",
+                                 "RdPu", "Reds", "YlGn", "YlGnBu", "GlOrBr", "YlOrRD")
+            )
+          )
+        ),
+      conditionalPanel(
+        condition = "input.fillcol == 'custom'",
+        uiOutput("customcolours"),
+        actionButton("submitColours", "Submit colours")
+      ),
       radioButtons("stratumColour", 
                    "Choose colour of stratum",
                    choices = list("Black" = "black", "White" = "white"), 
@@ -188,16 +228,76 @@ ui <- fluidPage(
     
     # Main panel for displaying outputs ----
     mainPanel(
-      # tableOutput("table"),
-      plotOutput("sankeyChart")
-      
+      tabsetPanel(
+        tabPanel("Sankey plot", plotOutput("sankeyChart")),
+        tabPanel("Data preview", tableOutput("table"))
+        )
+      )
     )
-    
-  )
 )
 
 # Define server logic to display and download selected file ----
 server <- function(input, output) {
+  
+  colours <- reactive({
+    if(input$fillcol == "colourpalette"){
+    input$palettes
+    } else {
+      NULL
+    }
+  })
+  
+  categoriesFill <- reactive({
+    input_data %>% select(input$fillval) %>% distinct() %>% pull()
+  })
+  
+  gps <- reactiveValues(x=NULL)
+  observeEvent(input$submitColours, {
+    lapply(1:length(categoriesFill()), function(i) {
+      gps$x[[i]] <- input[[paste0("colour", i)]]
+    })
+  })
+  
+  
+  colourVector <- reactive({
+    if(input$fillcol == "custom"){
+    req(input$submitColours)
+    colours <- rep("#000000", length(categoriesFill()))
+    colours <- gps$x
+    names(colours) <- categoriesFill()
+    colours
+    } else {
+      NULL
+    }
+  })
+  
+  colourInputList <- reactive({
+    req(input$fillval)
+    ls <- list()
+    for (i in 1:length(categoriesFill())){
+      category <- categoriesFill()[i]
+      si <- spectrumInput(
+        inputId = paste0("colour", i),
+        label = paste0("Pick a color for ",input$fillval," - ",category,":"),
+        selected = "#000000",
+        choices = list(
+          list('black', 'white', 'blanchedalmond', 'steelblue', 'forestgreen'),
+          as.list(brewer_pal(palette = "Blues")(9)),
+          as.list(brewer_pal(palette = "Greens")(9)),
+          as.list(brewer_pal(palette = "Spectral")(11)),
+          as.list(brewer_pal(palette = "Dark2")(8))
+        ),
+        options = list(`toggle-palette-more-text` = "Show more")
+      )
+      ls[[i]] <- si
+    }
+    ls
+  })
+
+  
+  output$customcolours <- renderUI({
+    colourInputList()
+    })
   
   plot_data <- reactive({
     prepare_data(df = input_data, 
@@ -206,9 +306,16 @@ server <- function(input, output) {
     })
   
   plot <- reactive({
+    colourVector <- NULL
+    try({
+      colourVector <- colourVector()
+    })
     create_sankey_plot(df = plot_data(), 
                        stratum_colour = input$stratumColour,
-                       fill_var = input$fillval)
+                       fill_var = input$fillval,
+                       palette = colours(),
+                       manualcols = colourVector
+                       )
     })
 
   output$sankeyChart <- renderPlot({
