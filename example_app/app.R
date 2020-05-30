@@ -19,10 +19,10 @@ library(scales)
 # labels <- c("change", "these", "labels")
 
 ### load data
-input_data <- read.csv("./data/example_data.csv")
+# input_data <- read.csv("./data/titanic_data.csv")
 
 # ### for local testing
-# df <- input_data
+# df <- input_data()
 # col_vars <- c("Class", "Sex", "Age")
 # fill_var <- "Survived"
 # fill_var <- ""
@@ -164,23 +164,14 @@ ui <- fluidPage(
     
     # Sidebar panel for inputs ----
     sidebarPanel(
-      
-      # Input: Choose columns ----
-      selectizeInput("chooseColumns", 
-                     "Choose columns for axes:",
-                     selected = c("Class", "Sex", "Age"),
-                     choices = names(input_data), 
-                     multiple = TRUE
-                     ),
-      selectizeInput(
-        "fillval", 
-        "Choose column for fill:",
-        choices = names(input_data),
-        options = list(
-          placeholder = 'Optionally select a fill variable',
-          onInitialize = I('function() { this.setValue(""); }')
-        )
+      selectizeInput("chooseData", 
+                     "Choose example data:",
+                     selected = "titanic",
+                     choices = c("Titanic" = "titanic", "UK general election 2019" = "election")
       ),
+      # Input: Choose columns ----
+      uiOutput("chooseColumnsInput"),
+      uiOutput("chooseFillvalInput"),
       conditionalPanel(
         condition = "input.fillval != ''",
         selectizeInput(
@@ -211,8 +202,7 @@ ui <- fluidPage(
         ),
       conditionalPanel(
         condition = "input.fillcol == 'custom'",
-        uiOutput("customcolours"),
-        actionButton("submitColours", "Submit colours")
+        uiOutput("customcolours")
       ),
       radioButtons("stratumColour", 
                    "Choose colour of stratum",
@@ -239,6 +229,36 @@ ui <- fluidPage(
 # Define server logic to display and download selected file ----
 server <- function(input, output) {
   
+  input_data <- reactive({
+    if(input$chooseData == "titanic"){
+      read.csv("./data/titanic_data.csv")
+    } else if (input$chooseData == "election"){
+      read.csv("./data/election_data.csv")
+    }
+    
+  })
+  
+  output$chooseColumnsInput <- renderUI({
+    selectizeInput("chooseColumns", 
+                   "Choose columns for axes:",
+                   selected = names(input_data())[1:2],
+                   choices = names(input_data()),
+                   multiple = TRUE
+    )
+  })
+  
+  output$chooseFillvalInput <- renderUI({
+    selectizeInput(
+      "fillval", 
+      "Choose column for fill:",
+      choices = names(input_data()),
+      options = list(
+        placeholder = 'Optionally select a fill variable',
+        onInitialize = I('function() { this.setValue(""); }')
+      )
+    )
+  })
+  
   colours <- reactive({
     if(input$fillcol == "colourpalette"){
     input$palettes
@@ -248,22 +268,16 @@ server <- function(input, output) {
   })
   
   categoriesFill <- reactive({
-    input_data %>% select(input$fillval) %>% distinct() %>% pull()
+    input_data() %>% select(input$fillval) %>% distinct() %>% pull()
   })
   
-  gps <- reactiveValues(x=NULL)
-  observeEvent(input$submitColours, {
-    lapply(1:length(categoriesFill()), function(i) {
-      gps$x[[i]] <- input[[paste0("colour", i)]]
-    })
-  })
-  
-  
+  inputColours <- reactiveValues(x=NULL)
   colourVector <- reactive({
     if(input$fillcol == "custom"){
-    req(input$submitColours)
-    colours <- rep("#000000", length(categoriesFill()))
-    colours <- gps$x
+      lapply(1:length(categoriesFill()), function(i) {
+        inputColours$x[[i]] <- input[[paste0("colour", i)]]
+      })
+    colours <- inputColours$x
     names(colours) <- categoriesFill()
     colours
     } else {
@@ -300,12 +314,13 @@ server <- function(input, output) {
     })
   
   plot_data <- reactive({
-    prepare_data(df = input_data, 
+    prepare_data(df = input_data(), 
                  col_vars = input$chooseColumns, 
                  fill_var = input$fillval)
     })
   
   plot <- reactive({
+    req(input$chooseColumns)
     colourVector <- NULL
     try({
       colourVector <- colourVector()
