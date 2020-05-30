@@ -5,6 +5,6 @@ account: lenamangold
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2327640
-bundleId: 3168678
+bundleId: 3206900
 url: https://lenamangold.shinyapps.io/example_app/
-when: 1589938910.26289
+when: 1590801245.90119
