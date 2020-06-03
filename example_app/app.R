@@ -7,25 +7,10 @@ library(ggplot2)
 library(ggforce)
 library(RColorBrewer)
 library(scales)
+library(dsmodules)
 
 # ### set wd (remove later)
 # setwd("C:/Users/Lena/Documents/Projects/Datasketch/Sankey plots in R/example_app")
-# 
-#
-# ### specify plot settings
-# stratum_font_colour = "white"
-# stratum_colour = "black"
-# flow_colours <- c("orange", "blue")
-# labels <- c("change", "these", "labels")
-
-### load data
-# input_data <- read.csv("./data/titanic_data.csv")
-
-# ### for local testing
-# df <- input_data()
-# col_vars <- c("Class", "Sex", "Age")
-# fill_var <- "Survived"
-# fill_var <- ""
 
 
 ###================================================================================
@@ -47,6 +32,8 @@ prepare_data <- function(df, col_vars, fill_var = ""){
   }
   
   dat_prelim <- df %>% 
+    select(groupby) %>% 
+    replace(is.na(.), "missing") %>% 
     group_by_at(groupby) %>% 
     summarise(Freq = n()) %>%
     ungroup() %>% 
@@ -164,11 +151,12 @@ ui <- fluidPage(
     
     # Sidebar panel for inputs ----
     sidebarPanel(
-      selectizeInput("chooseData", 
-                     "Choose example data:",
-                     selected = "titanic",
-                     choices = c("Titanic" = "titanic", "UK general election 2019" = "election")
-      ),
+      tableInputUI("dataInput", choices = list("Copy & paste" = "pasted",
+                                               "File upload" = "fileUpload",
+                                               "Example data" = "sampleData",
+                                               "Google sheets" = "googleSheets"),
+                   selected = "sampleData"),
+      verbatimTextOutput("inputOptions"),
       # Input: Choose columns ----
       uiOutput("chooseColumnsInput"),
       uiOutput("chooseFillvalInput"),
@@ -219,8 +207,9 @@ ui <- fluidPage(
     # Main panel for displaying outputs ----
     mainPanel(
       tabsetPanel(
+        tabPanel("Dataset", tableOutput("dataset")),
         tabPanel("Sankey plot", plotOutput("sankeyChart")),
-        tabPanel("Data preview", tableOutput("table"))
+        tabPanel("Data preview", tableOutput("formattedData"))
         )
       )
     )
@@ -229,20 +218,21 @@ ui <- fluidPage(
 # Define server logic to display and download selected file ----
 server <- function(input, output) {
   
-  input_data <- reactive({
-    if(input$chooseData == "titanic"){
-      read.csv("./data/titanic_data.csv")
-    } else if (input$chooseData == "election"){
-      read.csv("./data/election_data.csv")
-    }
-    
+  inputData <- callModule(tableInput, 
+                          "dataInput",
+                          sampleFile =
+                            list("Titanic"="./data/titanic_data.csv",
+                                 "UK general election 2019"="./data/election_data.csv"))
+  
+  output$inputOptions <- renderPrint({
+    inputData()
   })
   
   output$chooseColumnsInput <- renderUI({
     selectizeInput("chooseColumns", 
                    "Choose columns for axes:",
-                   selected = names(input_data())[1:2],
-                   choices = names(input_data()),
+                   selected = names(inputData())[1:2],
+                   choices = names(inputData()),
                    multiple = TRUE
     )
   })
@@ -251,7 +241,7 @@ server <- function(input, output) {
     selectizeInput(
       "fillval", 
       "Choose column for fill:",
-      choices = names(input_data()),
+      choices = names(inputData()),
       options = list(
         placeholder = 'Optionally select a fill variable',
         onInitialize = I('function() { this.setValue(""); }')
@@ -268,7 +258,7 @@ server <- function(input, output) {
   })
   
   categoriesFill <- reactive({
-    input_data() %>% select(input$fillval) %>% distinct() %>% pull()
+    inputData() %>% select(input$fillval) %>% distinct() %>% pull()
   })
   
   inputColours <- reactiveValues(x=NULL)
@@ -314,7 +304,7 @@ server <- function(input, output) {
     })
   
   plot_data <- reactive({
-    prepare_data(df = input_data(), 
+    prepare_data(df = inputData(), 
                  col_vars = input$chooseColumns, 
                  fill_var = input$fillval)
     })
@@ -336,8 +326,12 @@ server <- function(input, output) {
   output$sankeyChart <- renderPlot({
     plot()
   })
-  
-  output$table <- renderTable({
+
+  output$dataset <- renderTable({
+    head(inputData(), n = 10)
+  })
+    
+  output$formattedData <- renderTable({
     head(plot_data() %>% arrange(id), n = 10)
   })
   
