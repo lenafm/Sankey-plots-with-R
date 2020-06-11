@@ -7,301 +7,157 @@ library(ggplot2)
 library(ggforce)
 library(RColorBrewer)
 library(scales)
+library(tidyverse)
+library(V8)
+
+# load in ds packages
 library(dsmodules)
+library(shinyinvoer)
+library(shinypanels)
+library(shi18ny)
+library(hotr)
+library(parmesan)
 
-# ### set wd (remove later)
-# setwd("C:/Users/Lena/Documents/Projects/Datasketch/Sankey plots in R/example_app")
-
-
-###================================================================================
-### functions
-###================================================================================
-
-prepare_data <- function(df, col_vars, fill_var = ""){
-  
-  if(fill_var == ""){
-    fill_var <- NULL
-    }
-  
-  if(is.null(fill_var)){
-    groupby <- col_vars
-  } else if(fill_var %in% col_vars){
-    groupby <- col_vars
-  } else {
-    groupby <- c(col_vars, fill_var)
-  }
-  
-  dat_prelim <- df %>% 
-    select(groupby) %>% 
-    replace(is.na(.), "missing") %>% 
-    group_by_at(groupby) %>% 
-    summarise(Freq = n()) %>%
-    ungroup() %>% 
-    mutate(id = row_number())
-  
-  if(is.null(fill_var)){
-  dat_plot <- dat_prelim %>% 
-    tidyr::gather(key = "x",
-                  value = "stratum",
-                  factor_key = TRUE,
-                  col_vars)
-  } else {
-    dat_plot <- dat_prelim %>% 
-      tidyr::gather(key = "x",
-                    value = "stratum",
-                    factor_key = TRUE,
-                    col_vars) %>%
-      left_join(dat_prelim %>%
-                  mutate_(fill = fill_var) %>%
-                  select(id, fill),
-                by = "id")
-  }
-  return(dat_plot)
-}
-
-create_sankey_plot <- function(df, fill_var = "", palette = NULL, manualcols = NULL, labels = NULL, stratum_colour = "black"){
-  
-  if(fill_var == ""){
-    fill_var <- NULL
-  }
-  
-  
-  if(stratum_colour == "black"){
-    stratum_font_colour = "white"
-  } else {
-    stratum_font_colour = "black"
-    
-  }
-  
-  stratum_line_colour = "black"
-  
-  stratum_width <- 0.4
-  stratum_angle <- 0
-  legend_position <- "right"
-  alpha <- 0.7
-  
-  gg <- ggplot(df, aes(x = x, id = id, split = stratum, value = Freq)) +
-        geom_parallel_sets(alpha = alpha, axis.width = stratum_width) +
-        geom_parallel_sets_axes(axis.width = stratum_width, 
-                                fill = stratum_colour,
-                                colour = stratum_line_colour) +
-        geom_parallel_sets_labels(colour = stratum_font_colour, angle = stratum_angle) +
-        theme_minimal() +
-        theme(
-          legend.position = legend_position,
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          axis.text.y = element_blank(),
-          axis.text.x = element_text(size = 14, face = "bold"),
-          axis.title.x  = element_blank()
-          )
-  
-  if(!is.null(fill_var)){
-    gg <-   gg <- ggplot(df, aes(x = x, id = id, split = stratum, value = Freq)) +
-      geom_parallel_sets(aes(fill = fill), alpha = alpha, axis.width = stratum_width) +
-      geom_parallel_sets_axes(axis.width = stratum_width, 
-                              fill = stratum_colour,
-                              colour = stratum_line_colour) +
-      geom_parallel_sets_labels(colour = stratum_font_colour, angle = stratum_angle) +
-      scale_fill_discrete(name = fill_var) +
-      theme_minimal() +
-      theme(
-        legend.position = legend_position,
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text.y = element_blank(),
-        axis.text.x = element_text(size = 14, face = "bold"),
-        axis.title.x  = element_blank()
-      )
-  }
-  
-  if(!is.null(palette)){
-    gg <- gg +
-      scale_fill_brewer(name = fill_var, palette = palette) +
-      scale_color_brewer(palette = palette)
-  }
-  
-  if(!is.null(manualcols)){
-    gg <- gg +
-      scale_fill_manual(name = fill_var, values = manualcols) +
-      scale_color_manual(values = manualcols)
-  }
-  
-  if(!is.null(labels)){
-    gg <- gg +
-      scale_x_discrete(labels = labels)
-  }
-  
-  return(gg)
-}
-
-
-###================================================================================
-### app
-###================================================================================
+# load functions to prepare data and create plot
+source("sankey_functions.R")
 
 # Define UI for data download app ----
-ui <- fluidPage(
-  
-  # App title ----
-  titlePanel("App for Sankey plot"),
-  
-  # Sidebar layout with input and output definitions ----
-  sidebarLayout(
-    
-    # Sidebar panel for inputs ----
-    sidebarPanel(
-      tableInputUI("dataInput", choices = list("Copy & paste" = "pasted",
-                                               "File upload" = "fileUpload",
-                                               "Example data" = "sampleData",
-                                               "Google sheets" = "googleSheets"),
-                   selected = "sampleData"),
-      verbatimTextOutput("inputOptions"),
-      # Input: Choose columns ----
-      uiOutput("chooseColumnsInput"),
-      uiOutput("chooseFillvalInput"),
-      conditionalPanel(
-        condition = "input.fillval != ''",
-        selectizeInput(
-          "fillcol",
-          "Choose method for colour selection:",
-          choices = list("Colour palette" = "colourpalette", "Custom" = "custom"),
-          options = list(
-            placeholder = 'Optionally select a colour method',
-            onInitialize = I('function() { this.setValue(""); }')
-            )
-          )
-        ),
-      conditionalPanel(
-        condition = "input.fillcol == 'colourpalette'",
-        selectInput(
-          "palettes", 
-          "Colour palettes",
-          choices = list(
-            "Categorical:" = list("Accent", "Dark2", "Paired", "Pastel1",
-                                  "Pastel2", "Set1", "Set2", "Set3"),
-            "Diverging" = list("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
-                               "RdYlBu", "RdYlGn", "Spectral"),
-            "Sequential:" = list("Blues", "BuGn", "BuPu", "GnBu", "Greens",
-                                 "Greys", "Oranges", "OrRd", "PuBu", "PuBuGn", "PuRd", "Purples",
-                                 "RdPu", "Reds", "YlGn", "YlGnBu", "GlOrBr", "YlOrRD")
-            )
-          )
-        ),
-      conditionalPanel(
-        condition = "input.fillcol == 'custom'",
-        uiOutput("customcolours")
-      ),
-      radioButtons("stratumColour", 
-                   "Choose colour of stratum",
-                   choices = list("Black" = "black", "White" = "white"), 
-                   selected = "black"
-                   ),
-      
-      
-      # Button
-      downloadButton("downloadData", "Download")
-      
-    ),
-    
-    # Main panel for displaying outputs ----
-    mainPanel(
-      tabsetPanel(
-        tabPanel("Dataset", tableOutput("dataset")),
-        tabPanel("Sankey plot", plotOutput("sankeyChart")),
-        tabPanel("Data preview", tableOutput("formattedData"))
-        )
-      )
-    )
-)
+ui <- panelsPage(useShi18ny(),
+                 panel(title = ui_("upload_data"), 
+                       width = 200,
+                       body = uiOutput("dataInput")),
+                 panel(title = ui_("dataset"), 
+                       width = 300,
+                       body = uiOutput("dataset")),
+                 panel(title = ui_("options"), 
+                       width = 250,
+                       color = "chardonnay",
+                       body = uiOutput("controls")),
+                 panel(title = ui_("viz"),
+                       color = "chardonnay",
+                       can_collapse = FALSE,
+                       body = div(
+                         langSelectorInput("lang", position = "fixed"),
+                         plotOutput("sankeyChart"),
+                         shinypanels::modal(id = "download",
+                                            title = ui_("download_plot"),
+                                            uiOutput("modal"))),
+                       footer = shinypanels::modalButton(label = "Download sankey plot", modal_id = "download")))
 
-# Define server logic to display and download selected file ----
+
+
+# Define server logic ----
 server <- function(input, output) {
   
   inputData <- callModule(tableInput, 
-                          "dataInput",
+                          "initial_data",
                           sampleFile =
                             list("Titanic"="./data/titanic_data.csv",
                                  "UK general election 2019"="./data/election_data.csv"))
   
-  output$inputOptions <- renderPrint({
-    inputData()
+  i18n <- list(defaultLang = "en", availableLangs = c("en"))
+  lang <- callModule(langSelector, "lang", i18n = i18n, showSelector = FALSE)
+  observeEvent(lang(), {uiLangUpdate(input$shi18ny_ui_classes, lang())})
+  
+  output$dataInput <- renderUI({
+    choices <- c("sampleData", "pasted", "fileUpload", "googleSheets")
+    names(choices) <- i_(c("sample", "paste", "upload", "google"), lang = lang())
+    tableInputUI("initial_data", 
+                 choices = choices,
+                 selected = ifelse(is.null(input$`initial_data-tableInput`), "sampleData", input$`initial_data-tableInput`))
   })
   
-  output$chooseColumnsInput <- renderUI({
-    selectizeInput("chooseColumns", 
-                   "Choose columns for axes:",
-                   selected = names(inputData())[1:2],
-                   choices = names(inputData()),
-                   multiple = TRUE
+  labels <- reactive({
+    
+    sm_f <- paste0("data/", i_(c("sample_ch_0", "sample_ch_1"), lang()))
+    names(sm_f) <- i_(c("sample_ch_nm_0", "sample_ch_nm_1"), lang())
+    
+    list(sampleLabel = i_("sample_lb", lang()), 
+         sampleFiles = sm_f,
+         
+         pasteLabel = i_("paste", lang()), 
+         pasteValue = "", 
+         pastePlaceholder = i_("paste_pl", lang()), 
+         pasteRows = 5,
+         
+         uploadLabel = i_("upload_lb", lang()),
+         uploadButtonLabel = i_("upload_bt_lb", lang()), 
+         uploadPlaceholder = i_("upload_pl", lang()),
+         
+         googleSheetLabel = i_("google_sh_lb", lang()),
+         googleSheetValue = "",
+         googleSheetPlaceholder = i_("google_sh_pl", lang()),
+         googleSheetPageLabel = i_("google_sh_pg_lb", lang())
     )
   })
   
-  output$chooseFillvalInput <- renderUI({
-    selectizeInput(
-      "fillval", 
-      "Choose column for fill:",
-      choices = names(inputData()),
-      options = list(
-        placeholder = 'Optionally select a fill variable',
-        onInitialize = I('function() { this.setValue(""); }')
-      )
+  output$dataset <- renderUI({
+    if (is.null(inputData())) 
+      return()
+    suppressWarnings(hotr("hotr_input", data = inputData(), order = NULL, options = list(height = 470), enableCTypes = FALSE))
+  })
+  
+  path <- "parmesan"
+  parmesan <- parmesan_load(path)
+  parmesan_input <- parmesan_watch(input, parmesan)
+  parmesan_alert(parmesan, env = environment())
+  parmesan_lang <- reactive({i_(parmesan, lang(), keys = c("label", "choices", "text"))})
+  output_parmesan("controls",
+                  parmesan = parmesan_lang,
+                  input = input,
+                  output = output,
+                  env = environment())
+  
+  
+  datasetColumnChoices <- reactive({
+    names(inputData())
+  })
+  
+  datasetColumnSelected <- reactive({
+    names(inputData())[1:2]
+  })
+  
+  useFillValue <- reactive({
+    if(!is.null(input$fillval)) TRUE else FALSE
+  })
+  
+  colourMethodChoices <- reactive({
+    list("Colour palette" = "colourpalette", "Custom" = "custom")
+  })
+  
+  stratumColourChoices <- reactive({
+    list("Black" = "black", "White" = "white")
+  })
+  
+  colourPaletteChoices <- reactive({
+    list(
+      "Categorical:" = list("Accent", "Dark2", "Paired", "Pastel1",
+                            "Pastel2", "Set1", "Set2", "Set3"),
+      "Diverging" = list("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy",
+                         "RdYlBu", "RdYlGn", "Spectral"),
+      "Sequential:" = list("Blues", "BuGn", "BuPu", "GnBu", "Greens",
+                           "Greys", "Oranges", "OrRd", "PuBu", "PuBuGn", "PuRd", "Purples",
+                           "RdPu", "Reds", "YlGn", "YlGnBu", "GlOrBr", "YlOrRD")
     )
   })
   
-  colours <- reactive({
-    if(input$fillcol == "colourpalette"){
-    input$palettes
-    } else {
-      NULL
-    }
+  colourCustomChoices <- reactive({
+    rep("#000000", length(categoriesFill()))
+  }) 
+  
+  maxCustomChoices <- reactive({
+    length(categoriesFill())
   })
+  
+  customColours <- reactive({
+    colours <- paste0("#",input$colour_custom)
+    names(colours) <- sort(categoriesFill())
+    colours
+  }) 
   
   categoriesFill <- reactive({
     inputData() %>% select(input$fillval) %>% distinct() %>% pull()
   })
-  
-  inputColours <- reactiveValues(x=NULL)
-  colourVector <- reactive({
-    if(input$fillcol == "custom"){
-      lapply(1:length(categoriesFill()), function(i) {
-        inputColours$x[[i]] <- input[[paste0("colour", i)]]
-      })
-    colours <- inputColours$x
-    names(colours) <- categoriesFill()
-    colours
-    } else {
-      NULL
-    }
-  })
-  
-  colourInputList <- reactive({
-    req(input$fillval)
-    ls <- list()
-    for (i in 1:length(categoriesFill())){
-      category <- categoriesFill()[i]
-      si <- spectrumInput(
-        inputId = paste0("colour", i),
-        label = paste0("Pick a color for ",input$fillval," - ",category,":"),
-        selected = "#000000",
-        choices = list(
-          list('black', 'white', 'blanchedalmond', 'steelblue', 'forestgreen'),
-          as.list(brewer_pal(palette = "Blues")(9)),
-          as.list(brewer_pal(palette = "Greens")(9)),
-          as.list(brewer_pal(palette = "Spectral")(11)),
-          as.list(brewer_pal(palette = "Dark2")(8))
-        ),
-        options = list(`toggle-palette-more-text` = "Show more")
-      )
-      ls[[i]] <- si
-    }
-    ls
-  })
-
-  
-  output$customcolours <- renderUI({
-    colourInputList()
-    })
   
   plot_data <- reactive({
     prepare_data(df = inputData(), 
@@ -311,15 +167,19 @@ server <- function(input, output) {
   
   plot <- reactive({
     req(input$chooseColumns)
-    colourVector <- NULL
-    try({
-      colourVector <- colourVector()
-    })
+    palette = input$palette
+    if(input$colour_method == "colourpalette"){
+      palette <- input$palette
+      manualcols <- NULL
+    } else if(input$colour_method == "custom"){
+      palette <- NULL
+      manualcols <- customColours()
+    }
     create_sankey_plot(df = plot_data(), 
                        stratum_colour = input$stratumColour,
                        fill_var = input$fillval,
-                       palette = colours(),
-                       manualcols = colourVector
+                       palette = palette,
+                       manualcols = manualcols
                        )
     })
 
@@ -327,24 +187,13 @@ server <- function(input, output) {
     plot()
   })
 
-  output$dataset <- renderTable({
-    head(inputData(), n = 10)
-  })
-    
-  output$formattedData <- renderTable({
-    head(plot_data() %>% arrange(id), n = 10)
+
+  output$modal <- renderUI({
+    dw <- i_("download", lang())
+    downloadImageUI("download_data_button", dw, formats = c("jpeg", "png"))
   })
   
-  # Downloadable png of selected plot type ----
-  output$downloadData <- downloadHandler(
-    filename = function() {
-      paste0("sankey.png")
-    },
-    content = function(file) {
-      plot()
-      ggsave(file, device = "png")
-    }
-  )
+  callModule(downloadImage, "download_data_button", graph = plot(), lib = "ggplot", formats = c("jpeg", "png"))
   
 }
 
