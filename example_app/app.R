@@ -23,6 +23,7 @@ source("sankey_functions.R")
 
 # Define UI for data download app ----
 ui <- panelsPage(useShi18ny(),
+                 langSelectorInput("lang", position = "fixed"),
                  panel(title = ui_("upload_data"), 
                        width = 200,
                        body = uiOutput("dataInput")),
@@ -42,7 +43,7 @@ ui <- panelsPage(useShi18ny(),
                          shinypanels::modal(id = "download",
                                             title = ui_("download_plot"),
                                             uiOutput("modal"))),
-                       footer = shinypanels::modalButton(label = "Download sankey plot", modal_id = "download")))
+                       footer = shinypanels::modalButton(label = ui_("download_plot"), modal_id = "download")))
 
 
 
@@ -55,8 +56,10 @@ server <- function(input, output) {
                             list("Titanic"="./data/titanic_data.csv",
                                  "UK general election 2019"="./data/election_data.csv"))
   
-  i18n <- list(defaultLang = "en", availableLangs = c("en"))
+  i18n <- list(defaultLang = "en", 
+               availableLangs = c("en", "de"))
   lang <- callModule(langSelector, "lang", i18n = i18n, showSelector = FALSE)
+  
   observeEvent(lang(), {uiLangUpdate(input$shi18ny_ui_classes, lang())})
   
   output$dataInput <- renderUI({
@@ -122,11 +125,15 @@ server <- function(input, output) {
   })
   
   colourMethodChoices <- reactive({
-    list("Colour palette" = "colourpalette", "Custom" = "custom")
+    colour_method_choices <- list("colourpalette" = "colourpalette", "custom" = "custom")
+    names(colour_method_choices) <- i_(names(colour_method_choices), lang())
+    colour_method_choices
   })
-  
+
   stratumColourChoices <- reactive({
-    list("Black" = "black", "White" = "white")
+    stratum_method_choices <- list("black" = "black", "white" = "white")
+    names(stratum_method_choices) <- i_(names(stratum_method_choices), lang())
+    stratum_method_choices
   })
   
   colourPaletteChoices <- reactive({

@@ -1,10 +1,10 @@
 columns:
-  label: "Columns"
+  label: columns
   inputs:
     - chooseColumns
     - fillval
 colours:
-  label: "Choose flow colours"
+  label: choose_flow_colours
   inputs:
     - colour_method
     - palette
